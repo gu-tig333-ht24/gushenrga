@@ -11,7 +11,7 @@ class TodoApp extends StatelessWidget {
     return MaterialApp(
       title: 'TIG333 Att Göra',
       theme: ThemeData(
-        primarySwatch: Colors.grey, // Grå färgtema för appen
+        primarySwatch: Colors.grey,
       ),
       home: TodoListScreen(), // Startskärmen är TodoListScreen
     );
