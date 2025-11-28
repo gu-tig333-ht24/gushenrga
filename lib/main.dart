@@ -57,49 +57,101 @@ class Todo {
 }
 
 Future<List<Todo>> fetchTodos(String apiKey) async {
-  final response = await http.get(Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'));
+  final response = await http
+      .get(Uri.parse("https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey"));
 
   if (response.statusCode == 200) {
     final List<dynamic> jsonResponse = jsonDecode(response.body);
     return jsonResponse.map((todo) => Todo.fromJson(todo)).toList();
   } else {
-    throw Exception('Kunde inte ladda todos');
+    throw Exception("Kunde inte ladda todos");
   }
 }
 
 Future<void> addTodo(String apiKey, Todo todo) async {
   final response = await http.post(
-    Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey'),
-    headers: {'Content-Type': 'application/json'},
+    Uri.parse("https://todoapp-api.apps.k8s.gu.se/todos?key=$apiKey"),
+    headers: {"Content-Type": "application/json"},
     body: jsonEncode(todo.toJson()),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Kunde inte lägga till todo');
+    throw Exception("Kunde inte lägga till todo");
   }
 }
 
 Future<void> updateTodo(String apiKey, Todo todo) async {
   final response = await http.put(
-    Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/${todo.id}?key=$apiKey'),
-    headers: {'Content-Type': 'application/json'},
+    Uri.parse("https://todoapp-api.apps.k8s.gu.se/todos/${todo.id}?key=$apiKey"),
+    headers: {"Content-Type": "application/json"},
     body: jsonEncode(todo.toJson()),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Kunde inte uppdatera todo');
+    throw Exception("Kunde inte uppdatera todo");
   }
 }
 
 Future<void> deleteTodo(String apiKey, String id) async {
   final response = await http.delete(
-    Uri.parse('https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$apiKey'),
+    Uri.parse("https://todoapp-api.apps.k8s.gu.se/todos/$id?key=$apiKey"),
   );
 
   if (response.statusCode != 200) {
-    throw Exception('Kunde inte ta bort todo');
+    throw Exception("Kunde inte ta bort todo");
   }
 }
+
+class AddTodoScreen extends StatefulWidget {
+  final Function(String) onAdd;
+
+  const AddTodoScreen({super.key, required this.onAdd});
+
+  @override
+  State<AddTodoScreen> createState() => _AddTodoScreenState();
+}
+
+class _AddTodoScreenState extends State<AddTodoScreen> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Lägg till ny uppgift"),
+        backgroundColor: Colors.blue[900],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: "Uppgift",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[900],
+              ),
+              onPressed: () {
+                if (_controller.text.isNotEmpty) {
+                  widget.onAdd(_controller.text);
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text("Lägg till"),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
@@ -110,10 +162,13 @@ class TodoListScreen extends StatefulWidget {
 
 class _TodoListScreenState extends State<TodoListScreen> {
   late Future<List<Todo>> futureTodos;
-  final String apiKey = '554bd97b-6e56-4aa7-8c47-4d3b30f598b4';
+
+
+  final String apiKey = "7baca196-fd3b-4afb-9613-02c61f5bb9d2";
+
   final TextEditingController textController = TextEditingController();
   bool isDarkMode = false;
-  String filter = 'all';
+  String filter = "all";
 
   @override
   void initState() {
@@ -121,56 +176,37 @@ class _TodoListScreenState extends State<TodoListScreen> {
     futureTodos = fetchTodos(apiKey);
   }
 
-  void _addTodo() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Lägg till ny uppgift'),
-          content: TextField(
-            controller: textController,
-            decoration: const InputDecoration(hintText: 'Skriv uppgiftens namn'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                String newTodoTitle = textController.text;
-                if (newTodoTitle.isNotEmpty) {
-                  Todo newTodo = Todo(id: '', title: newTodoTitle, done: false);
-                  addTodo(apiKey, newTodo).then((_) {
-                    setState(() {
-                      futureTodos = fetchTodos(apiKey);
-                    });
-                    textController.clear();
-                  });
-                }
-                Navigator.of(context).pop();
-              },
-              child: const Text('Lägg till'),
-            ),
-            TextButton(
-              onPressed: () {
-                textController.clear();
-                Navigator.of(context).pop();
-              },
-              child: const Text('Avbryt'),
-            ),
-          ],
-        );
-      },
+
+  void _navigateToAddTodo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTodoScreen(
+          onAdd: (String title) {
+            Todo newTodo = Todo(id: "", title: title, done: false);
+            addTodo(apiKey, newTodo).then((_) {
+              setState(() {
+                futureTodos = fetchTodos(apiKey);
+              });
+            });
+          },
+        ),
+      ),
     );
   }
 
+
   void _editTodoName(Todo todo) {
     textController.text = todo.title;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Redigera Todo'),
+          title: const Text("Redigera Todo"),
           content: TextField(
             controller: textController,
-            decoration: const InputDecoration(hintText: 'Ändra uppgiftens namn'),
+            decoration: const InputDecoration(hintText: "Ändra uppgiftens namn"),
           ),
           actions: [
             TextButton(
@@ -182,19 +218,17 @@ class _TodoListScreenState extends State<TodoListScreen> {
                     setState(() {
                       futureTodos = fetchTodos(apiKey);
                     });
-                    textController.clear();
                   });
                 }
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
-              child: const Text('Spara'),
+              child: const Text("Spara"),
             ),
             TextButton(
               onPressed: () {
-                textController.clear();
-                Navigator.of(context).pop();
+                Navigator.pop(context);
               },
-              child: const Text('Avbryt'),
+              child: const Text("Avbryt"),
             ),
           ],
         );
@@ -204,16 +238,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
 
   void _toggleTodoDone(Todo todo) {
     final updatedTodo = todo.copyWith(done: !todo.done);
+
     updateTodo(apiKey, updatedTodo).then((_) {
       setState(() {
-        futureTodos = futureTodos.then((todos) {
-          return todos.map((t) => t.id == todo.id ? updatedTodo : t).toList();
-        });
+        futureTodos = fetchTodos(apiKey);
       });
-    }).catchError((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kunde inte uppdatera uppgiften')),
-      );
     });
   }
 
@@ -222,17 +251,11 @@ class _TodoListScreenState extends State<TodoListScreen> {
       setState(() {
         futureTodos = fetchTodos(apiKey);
       });
-    }).catchError((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kunde inte ta bort uppgiften')),
-      );
     });
   }
 
   void _toggleTheme() {
-    setState(() {
-      isDarkMode = !isDarkMode;
-    });
+    setState(() => isDarkMode = !isDarkMode);
   }
 
   @override
@@ -242,61 +265,29 @@ class _TodoListScreenState extends State<TodoListScreen> {
         backgroundColor: Colors.blue[900],
         title: Row(
           children: [
-            Theme(
-              data: Theme.of(context).copyWith(
-                cardColor: Colors.blue[700],
-              ),
-              child: PopupMenuButton<String>(
-                color: Colors.blue[100],
-                onSelected: (String result) {
-                  setState(() {
-                    filter = result;
-                  });
-                },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  const PopupMenuItem<String>(
-                    value: 'all',
-                    child: Text(
-                      'Alla',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'done',
-                    child: Text(
-                      'Gjorda',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'undone',
-                    child: Text(
-                      'Ogjorda',
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                ],
-                icon: const Icon(
-                  Icons.filter_list,
-                  color: Colors.white,
-                ),
-              ),
+            PopupMenuButton<String>(
+              color: Colors.blue[100],
+              onSelected: (String result) {
+                setState(() => filter = result);
+              },
+              itemBuilder: (BuildContext context) => const [
+                PopupMenuItem(value: 'all', child: Text("Alla")),
+                PopupMenuItem(value: 'done', child: Text("Gjorda")),
+                PopupMenuItem(value: 'undone', child: Text("Ogjorda")),
+              ],
+              icon: const Icon(Icons.filter_list, color: Colors.white),
             ),
             const Spacer(),
-            const Center(
-              child: Text(
-                'TIG333 Att Göra',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            const Text("TIG333 Att Göra",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const Spacer(),
             IconButton(
-              icon: Icon(isDarkMode ? Icons.wb_sunny : Icons.nightlight_round, color: Colors.white),
+              icon: Icon(
+                isDarkMode ? Icons.wb_sunny : Icons.nightlight_round,
+                color: Colors.white,
+              ),
               onPressed: _toggleTheme,
-            ),
+            )
           ],
         ),
       ),
@@ -306,39 +297,30 @@ class _TodoListScreenState extends State<TodoListScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final todos = snapshot.data!;
-          List<Todo> filteredTodos = todos;
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
 
-          if (filter == 'done') {
-            filteredTodos = todos.where((todo) => todo.done).toList();
-          } else if (filter == 'undone') {
-            filteredTodos = todos.where((todo) => !todo.done).toList();
+          final todos = snapshot.data ?? [];
+
+          List<Todo> filteredTodos = todos;
+          if (filter == "done") {
+            filteredTodos = todos.where((t) => t.done).toList();
+          } else if (filter == "undone") {
+            filteredTodos = todos.where((t) => !t.done).toList();
           }
 
           return ListView.builder(
             itemCount: filteredTodos.length,
             itemBuilder: (context, index) {
               return Card(
-                key: ValueKey(filteredTodos[index].id),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: Colors.blue[900]!, width: 2),
-                ),
                 child: TodoItem(
                   todo: filteredTodos[index],
-                  onChanged: (bool? value) {
-                    _toggleTodoDone(filteredTodos[index]);
-                  },
-                  onDelete: () {
-                    _deleteTodo(filteredTodos[index]);
-                  },
-                  onEdit: () {
-                    _editTodoName(filteredTodos[index]);
-                  },
+                  onChanged: (value) => _toggleTodoDone(filteredTodos[index]),
+                  onEdit: () => _editTodoName(filteredTodos[index]),
+                  onDelete: () => _deleteTodo(filteredTodos[index]),
                   isDarkMode: isDarkMode,
                 ),
               );
@@ -346,14 +328,17 @@ class _TodoListScreenState extends State<TodoListScreen> {
           );
         },
       ),
+
       floatingActionButton: FloatingActionButton(
-        onPressed: _addTodo,
+        onPressed: _navigateToAddTodo,
         backgroundColor: Colors.blue[900],
         child: const Icon(Icons.add),
       ),
     );
   }
 }
+
+
 
 class TodoItem extends StatelessWidget {
   final Todo todo;
@@ -374,32 +359,20 @@ class TodoItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: const EdgeInsets.all(10),
-      leading: Checkbox(
-        value: todo.done,
-        onChanged: onChanged,
-      ),
+      leading: Checkbox(value: todo.done, onChanged: onChanged),
       title: Text(
         todo.title,
         style: TextStyle(
-          fontSize: 18,
-          decoration: todo.done ? TextDecoration.lineThrough : TextDecoration.none,
+          decoration: todo.done ? TextDecoration.lineThrough : null,
         ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.blue),
-            onPressed: () => onEdit(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () => onDelete(),
-          ),
+          IconButton(icon: const Icon(Icons.edit), onPressed: () => onEdit()),
+          IconButton(icon: const Icon(Icons.delete), onPressed: () => onDelete()),
         ],
       ),
-      tileColor: isDarkMode ? Colors.grey[800] : Colors.white,
     );
   }
 }
